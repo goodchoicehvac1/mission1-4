@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>영화 티어리스트 (기능 추가 및 원래 기능 복구 완료 - 영화_기능추가_수정1)</title>
+  <style>
+    body { font-family: 'Malgun Gothic', sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 24px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 14px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+    h1 { font-size: 24px; margin: 0; display: flex; align-items: center; gap: 10px; }
+    .badge-ok { background: #10b981; color: white; font-size: 13px; padding: 3px 8px; border-radius: 4px; }
+    .search-bar-wrap { display: flex; gap: 10px; margin-bottom: 20px; background: #1e293b; padding: 12px; border-radius: 8px; border: 1px solid #334155; align-items: center; }
+    .search-bar-wrap input { flex: 1; padding: 9px 14px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 14px; }
+    .search-bar-wrap input:focus { outline: none; border-color: #3b82f6; }
+    .search-bar-wrap button.btn-clear { background: #475569; color: #fff; border: none; padding: 9px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    button.btn-reset { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .tier-board { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+    .tier-row { display: flex; min-height: 80px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
+    .tier-header { width: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #111; }
+    .tier-header small { font-size: 11px; margin-top: 2px; }
+    .t-S { background: #ff595e; }
+    .t-A { background: #ff924c; }
+    .t-B { background: #ffca3a; }
+    .t-C { background: #8ac926; }
+    .t-D { background: #6495ed; }
+    .tier-dropzone { flex: 1; display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; align-items: center; }
+    .pool-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 16px; }
+    .pool-title { font-weight: bold; margin-bottom: 10px; color: #94a3b8; display: flex; justify-content: space-between; }
+    .movie-card { background: #334155; color: #fff; padding: 10px 16px; border-radius: 6px; cursor: grab; user-select: none; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.25); border: 1px solid #475569; }
+    .movie-card:hover { border-color: #60a5fa; }
+    .movie-card.matched { background: #1e3a8a; border-color: #3b82f6; }
+    .hidden { display: none !important; }
+    .status-msg { margin-top: 14px; text-align: right; font-size: 13px; color: #60a5fa; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎬 나만의 영화 티어리스트 <span class="badge-ok">검색 기능 추가 완료</span></h1>
+      <button class="btn-reset" onclick="resetToInitial()">전체 초기화</button>
+    </header>
+
+    <div class="search-bar-wrap">
+      <input type="text" id="searchInput" placeholder="🔍 영화 제목으로 실시간 찾기 (예: 기생충, 올드보이)" oninput="filterMovies()">
+      <button class="btn-clear" onclick="clearSearch()">검색 초기화</button>
+    </div>
+
+    <div class="tier-board">
+      <div class="tier-row"><div class="tier-header t-S">S<small>명작</small></div><div class="tier-dropzone" data-tier="S"></div></div>
+      <div class="tier-row"><div class="tier-header t-A">A<small>추천</small></div><div class="tier-dropzone" data-tier="A"></div></div>
+      <div class="tier-row"><div class="tier-header t-B">B<small>보통</small></div><div class="tier-dropzone" data-tier="B"></div></div>
+      <div class="tier-row"><div class="tier-header t-C">C<small>아쉬움</small></div><div class="tier-dropzone" data-tier="C"></div></div>
+      <div class="tier-row"><div class="tier-header t-D">D<small>비추천</small></div><div class="tier-dropzone" data-tier="D"></div></div>
+    </div>
+
+    <div class="pool-box">
+      <div class="pool-title">
+        <span>미분류 보관함</span>
+        <span id="searchResultCount" style="font-size:12px; font-weight:normal; color:#94a3b8;"></span>
+      </div>
+      <div class="tier-dropzone" data-tier="unranked" id="unranked"></div>
+    </div>
+
+    <div class="status-msg">✅ 실시간 검색 및 브라우저 자동 저장(localStorage) 모두 정상 작동 중</div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'mission4_final_saved_v2';
+    const INITIAL_MOVIES = [
+      { id: "m1", title: "기생충", tier: "unranked" },
+      { id: "m2", title: "명량", tier: "unranked" },
+      { id: "m3", title: "괴물", tier: "unranked" },
+      { id: "m4", title: "올드보이", tier: "unranked" },
+      { id: "m5", title: "부산행", tier: "unranked" },
+      { id: "m6", title: "신과함께", tier: "unranked" },
+      { id: "m7", title: "도둑들", tier: "unranked" },
+      { id: "m8", title: "7번방의 선물", tier: "unranked" }
+    ];
+
+    let movies = [];
+
+    function init() {
+      // [복구 완료]: 원본의 로컬스토리지 불러오기 로직 완벽 보존
+      const saved = localStorage.getItem(STORAGE_KEY);
+      movies = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(INITIAL_MOVIES));
+      render();
+      bindEvents();
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(movies));
+    }
+
+    function render() {
+      document.querySelectorAll('.tier-dropzone').forEach(z => z.innerHTML = '');
+      movies.forEach(m => {
+        const card = document.createElement('div');
+        card.className = 'movie-card';
+        card.textContent = m.title;
+        card.draggable = true;
+        card.dataset.id = m.id;
+
+        card.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', m.id);
+        });
+
+        const target = document.querySelector(`.tier-dropzone[data-tier="${m.tier}"]`) || document.getElementById('unranked');
+        target.appendChild(card);
+      });
+      filterMovies();
+    }
+
+    function filterMovies() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      let matchedCount = 0;
+
+      document.querySelectorAll('.movie-card').forEach(card => {
+        const title = card.textContent.toLowerCase();
+        if (!q) {
+          card.classList.remove('hidden', 'matched');
+        } else if (title.includes(q)) {
+          card.classList.remove('hidden');
+          card.classList.add('matched');
+          matchedCount++;
+        } else {
+          card.classList.add('hidden');
+          card.classList.remove('matched');
+        }
+      });
+
+      const countEl = document.getElementById('searchResultCount');
+      if (q) {
+        countEl.textContent = `검색어 '${q}' 결과: ${matchedCount}편 일치`;
+      } else {
+        countEl.textContent = `전체 영화: ${movies.length}편`;
+      }
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      filterMovies();
+    }
+
+    function bindEvents() {
+      document.querySelectorAll('.tier-dropzone').forEach(zone => {
+        zone.addEventListener('dragover', e => e.preventDefault());
+        zone.addEventListener('drop', e => {
+          e.preventDefault();
+          const id = e.dataTransfer.getData('text/plain');
+          const movie = movies.find(x => x.id === id);
+          if (movie) {
+            movie.tier = zone.dataset.tier;
+            save(); // 저장 실행
+            render();
+          }
+        });
+      });
+    }
+
+    function resetToInitial() {
+      if (confirm('모든 분류 상태를 처음으로 되돌리시겠습니까?')) {
+        movies = JSON.parse(JSON.stringify(INITIAL_MOVIES));
+        document.getElementById('searchInput').value = '';
+        save();
+        render();
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

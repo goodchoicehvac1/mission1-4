@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>미션 4 발표자료 - 김선태 (기능을 더하고 확인·복구를 반복하기)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Malgun Gothic', sans-serif; background: #0b0f19; color: #f8fafc; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+    .deck { flex: 1; display: flex; justify-content: center; align-items: center; padding: 30px; }
+    .slide { display: none; width: 100%; max-width: 1100px; height: 100%; max-height: 640px; background: #161e31; border: 1px solid #2a3655; border-radius: 18px; padding: 40px 50px; flex-direction: column; justify-content: space-between; }
+    .slide.active { display: flex; }
+    .tag { display: inline-block; background: rgba(59,130,246,0.15); color: #60a5fa; padding: 4px 12px; border-radius: 99px; font-size: 13px; font-weight: bold; margin-bottom: 12px; width: fit-content; }
+    h1 { font-size: 38px; margin-bottom: 16px; color: #fff; }
+    h2 { font-size: 26px; border-left: 5px solid #3b82f6; padding-left: 14px; margin-bottom: 18px; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 18px; margin-bottom: 12px; }
+    .card.hl { border-color: #3b82f6; background: rgba(30,58,138,0.25); }
+    ul { list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 15.5px; color: #e2e8f0; }
+    ul li::before { content: "• "; color: #60a5fa; font-weight: bold; }
+    .bar { height: 50px; background: #090d16; border-top: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; font-size: 14px; color: #94a3b8; }
+    button { background: #1e293b; color: #fff; border: 1px solid #334155; padding: 5px 12px; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #3b82f6; }
+  </style>
+</head>
+<body>
+  <div class="deck">
+    <!-- Slide 1 -->
+    <div class="slide active">
+      <div>
+        <span class="tag">Codyssey AI 네이티브 · 미션 4 발표 (5분)</span>
+        <h1>기능을 더하고,<br><span style="color:#60a5fa;">확인·복구를 반복하기</span></h1>
+        <p style="font-size:18px; color:#cbd5e1; margin-top:14px;">실시간 영화 검색 기능을 추가하며 발생한 기존 기능 훼손을 발견하고 원본 기준으로 완벽 복구한 실전 경험</p>
+      </div>
+      <div class="card hl">
+        <ul>
+          <li><strong>발표자</strong>: 김선태 (굳초이스냉동공조)</li>
+          <li><strong>새로 더한 기능</strong>: <strong>실시간 영화 제목 검색(필터링) 및 검색어 초기화 기능</strong></li>
+          <li><strong>핵심 원칙</strong>: 새 기능이 동작해도 원래 되던 기능이 깨졌다면 원본 파일로 돌아가 복구한다!</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide">
+      <div>
+        <span class="tag">01. 더할 기능 선정과 기획서 확장</span>
+        <h2>왜 실시간 검색 기능인가? & 새 완성 기준</h2>
+        <div class="card">
+          <ul>
+            <li><strong>기능 선정 이유</strong>: 등록된 영화가 많아졌을 때 특정 영화가 어느 등급에 있는지 한눈에 찾기 위해</li>
+            <li><strong>기획서 덧붙임</strong>:</li>
+            <li>1) 검색창에 글자를 치면 해당 영화만 보이고 나머지는 숨겨진다.</li>
+            <li>2) 검색어를 지우면 모든 영화가 원래 등급 자리에 다시 보인다.</li>
+            <li>3) <strong>[원래 기능 보존]</strong>: 검색 중에도 드래그가 되고, 새로고침해도 등급 저장 상태가 유지되어야 한다.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card hl">
+        <strong style="color:#fde047; font-size:16px;">💡 원칙:</strong> 기능을 더하기 전에 "무엇을 했을 때 어떻게 되면 성공인지" 완성 기준을 먼저 글로 써야 합니다.
+      </div>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="slide">
+      <div>
+        <span class="tag">02. 1차 결과물과 치명적 버그 발견</span>
+        <h2>영화_기능추가.html: 새 기능은 되는데 원래 기능이 깨졌다!</h2>
+        <div class="card">
+          <ul>
+            <li><strong>새 기능 확인</strong>: 검색창에 "기"를 치니 '기생충'만 잘 남음 (새 기능 통과)</li>
+            <li><strong>원래 기능 재검증 중 충격적 발견</strong>: 영화를 S칸으로 옮기고 F5(새로고침)를 눌렀더니 S칸의 영화가 미분류로 리셋됨!</li>
+            <li><strong>원인 분석</strong>: AI가 검색 필터 로직을 짜면서 <code>init()</code>에서 <code>localStorage.getItem</code> 불러오는 핵심 코드를 통째로 빠뜨림!</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card hl">
+        <strong style="color:#ef4444; font-size:16px;">⚠️ 경계할 점 (회귀 버그):</strong>
+        <p style="font-size:15px; margin-top:4px;">AI는 새 기능을 짜느라 기존 기능의 소중한 로직을 사소하다고 여겨 날려버리기 쉽습니다!</p>
+      </div>
+    </div>
+
+    <!-- Slide 4 -->
+    <div class="slide">
+      <div>
+        <span class="tag">03. 복구와 최종 완성 (영화_기능추가_수정1.html)</span>
+        <h2>망가진 코드를 계속 땜질하지 않고 원본으로 돌아가기</h2>
+        <div class="card">
+          <ul>
+            <li><strong>복구 전략</strong>: 망가진 <code>영화_기능추가.html</code>을 붙들고 씨름하지 않고, 잘 동작하던 <code>영화_원본.html</code>을 가져와 재요청</li>
+            <li><strong>AI 요청문</strong>: "영화_원본.html의 localStorage 저장/불러오기 구조를 온전히 유지한 채 검색 기능만 결합해 줘."</li>
+            <li><strong>최종 검증</strong>:</li>
+            <li>- 실시간 검색 필터링 및 강조 완벽 동작</li>
+            <li>- 검색 상태에서도 자유로운 카드 이동 및 등급 저장 유지</li>
+            <li>- 브라우저를 닫았다가 다시 열어도 데이터 100% 보존 확인!</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5 -->
+    <div class="slide">
+      <div>
+        <span class="tag">04. 미션 4를 통해 얻은 교훈</span>
+        <h2>안전하게 기능을 확장하는 개발자의 기본기</h2>
+        <div class="card">
+          <ul>
+            <li><strong>기존 기능 테스트가 먼저다</strong>: 새 기능이 아무리 멋져도 기존 핵심 기능이 깨졌다면 실패작이다.</li>
+            <li><strong>원본 보관의 위력</strong>: 잘 동작하는 원본(버전)을 백업해 두어야 언제든 안전하게 복구할 수 있다.</li>
+            <li><strong>현업 적용</strong>: 앞으로 굳초이스냉동공조 견적서 및 고객 관리 시스템에 기능을 하나씩 덧붙일 때도 반드시 '원본 보관 -> 기능 추가 -> 기존 기능 재검증' 3단계를 철저히 지키겠다.</li>
+          </ul>
+        </div>
+      </div>
+      <p style="text-align:center; font-size:18px; font-weight:bold; color:#60a5fa;">경청해 주셔서 감사합니다!</p>
+    </div>
+  </div>
+
+  <div class="bar">
+    <div><strong>Codyssey 미션 4 발표</strong> | 김선태</div>
+    <div>
+      <button onclick="prev()">◀ 이전</button>
+      <span id="c" style="margin:0 10px; color:#fff;">1 / 5</span>
+      <button onclick="next()">다음 ▶</button>
+    </div>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    let idx = 0;
+    function show() {
+      slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+      document.getElementById('c').textContent = `${idx + 1} / ${slides.length}`;
+    }
+    function next() { if (idx < slides.length - 1) { idx++; show(); } }
+    function prev() { if (idx > 0) { idx--; show(); } }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === ' ') next();
+      if (e.key === 'ArrowLeft') prev();
+    });
+  </script>
+</body>
+</html>

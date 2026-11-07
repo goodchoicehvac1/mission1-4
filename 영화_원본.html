@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>영화 티어리스트 (원본)</title>
+  <style>
+    body { font-family: 'Malgun Gothic', sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 24px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 14px; margin-bottom: 20px; }
+    h1 { font-size: 24px; margin: 0; }
+    button.btn-reset { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .tier-board { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+    .tier-row { display: flex; min-height: 80px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
+    .tier-header { width: 100px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #111; }
+    .t-S { background: #ff595e; }
+    .t-A { background: #ff924c; }
+    .t-B { background: #ffca3a; }
+    .t-C { background: #8ac926; }
+    .t-D { background: #6495ed; }
+    .tier-dropzone { flex: 1; display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; align-items: center; }
+    .pool-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 16px; }
+    .pool-title { font-weight: bold; margin-bottom: 10px; color: #94a3b8; }
+    .movie-card { background: #334155; color: #fff; padding: 10px 16px; border-radius: 6px; cursor: grab; user-select: none; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.25); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎬 영화 티어리스트 (기능 추가 전 원본)</h1>
+      <button class="btn-reset" onclick="resetToInitial()">전체 초기화</button>
+    </header>
+
+    <div class="tier-board">
+      <div class="tier-row"><div class="tier-header t-S">S</div><div class="tier-dropzone" data-tier="S"></div></div>
+      <div class="tier-row"><div class="tier-header t-A">A</div><div class="tier-dropzone" data-tier="A"></div></div>
+      <div class="tier-row"><div class="tier-header t-B">B</div><div class="tier-dropzone" data-tier="B"></div></div>
+      <div class="tier-row"><div class="tier-header t-C">C</div><div class="tier-dropzone" data-tier="C"></div></div>
+      <div class="tier-row"><div class="tier-header t-D">D</div><div class="tier-dropzone" data-tier="D"></div></div>
+    </div>
+
+    <div class="pool-box">
+      <div class="pool-title">미분류 보관함</div>
+      <div class="tier-dropzone" data-tier="unranked" id="unranked"></div>
+    </div>
+  </div>
+
+  <script>
+    const INITIAL_MOVIES = [
+      { id: "m1", title: "기생충", tier: "unranked" },
+      { id: "m2", title: "명량", tier: "unranked" },
+      { id: "m3", title: "괴물", tier: "unranked" },
+      { id: "m4", title: "올드보이", tier: "unranked" },
+      { id: "m5", title: "부산행", tier: "unranked" },
+      { id: "m6", title: "신과함께", tier: "unranked" },
+      { id: "m7", title: "도둑들", tier: "unranked" },
+      { id: "m8", title: "7번방의 선물", tier: "unranked" }
+    ];
+
+    let movies = [];
+
+    function init() {
+      const saved = localStorage.getItem('mission4_clean_movies');
+      movies = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(INITIAL_MOVIES));
+      render();
+      bindEvents();
+    }
+
+    function render() {
+      document.querySelectorAll('.tier-dropzone').forEach(z => z.innerHTML = '');
+      movies.forEach(m => {
+        const card = document.createElement('div');
+        card.className = 'movie-card';
+        card.textContent = m.title;
+        card.draggable = true;
+        card.dataset.id = m.id;
+
+        card.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', m.id);
+        });
+
+        const target = document.querySelector(`.tier-dropzone[data-tier="${m.tier}"]`) || document.getElementById('unranked');
+        target.appendChild(card);
+      });
+    }
+
+    function bindEvents() {
+      document.querySelectorAll('.tier-dropzone').forEach(zone => {
+        zone.addEventListener('dragover', e => e.preventDefault());
+        zone.addEventListener('drop', e => {
+          e.preventDefault();
+          const id = e.dataTransfer.getData('text/plain');
+          const movie = movies.find(x => x.id === id);
+          if (movie) {
+            movie.tier = zone.dataset.tier;
+            localStorage.setItem('mission4_clean_movies', JSON.stringify(movies));
+            render();
+          }
+        });
+      });
+    }
+
+    function resetToInitial() {
+      movies = JSON.parse(JSON.stringify(INITIAL_MOVIES));
+      localStorage.setItem('mission4_clean_movies', JSON.stringify(movies));
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>

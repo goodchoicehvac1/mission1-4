@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>영화 티어리스트 (기능 추가 1차 - 기존 저장 기능 버그 발생)</title>
+  <style>
+    body { font-family: 'Malgun Gothic', sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 24px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 14px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+    h1 { font-size: 24px; margin: 0; }
+    .search-box { margin-bottom: 20px; background: #1e293b; padding: 12px; border-radius: 8px; border: 1px solid #334155; }
+    .search-box input { width: 100%; box-sizing: border-box; padding: 8px 12px; border-radius: 4px; border: 1px solid #475569; background: #0f172a; color: #fff; font-size: 14px; }
+    button.btn-reset { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .tier-board { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+    .tier-row { display: flex; min-height: 80px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }
+    .tier-header { width: 100px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #111; }
+    .t-S { background: #ff595e; }
+    .t-A { background: #ff924c; }
+    .t-B { background: #ffca3a; }
+    .t-C { background: #8ac926; }
+    .t-D { background: #6495ed; }
+    .tier-dropzone { flex: 1; display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; align-items: center; }
+    .pool-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 16px; }
+    .pool-title { font-weight: bold; margin-bottom: 10px; color: #94a3b8; }
+    .movie-card { background: #334155; color: #fff; padding: 10px 16px; border-radius: 6px; cursor: grab; user-select: none; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.25); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎬 영화 티어리스트 (기능 추가 1차본)</h1>
+      <button class="btn-reset" onclick="resetToInitial()">전체 초기화</button>
+    </header>
+
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="🔍 영화 제목으로 실시간 검색 (예: 기생충)" oninput="filterMovies()">
+    </div>
+
+    <div class="tier-board">
+      <div class="tier-row"><div class="tier-header t-S">S</div><div class="tier-dropzone" data-tier="S"></div></div>
+      <div class="tier-row"><div class="tier-header t-A">A</div><div class="tier-dropzone" data-tier="A"></div></div>
+      <div class="tier-row"><div class="tier-header t-B">B</div><div class="tier-dropzone" data-tier="B"></div></div>
+      <div class="tier-row"><div class="tier-header t-C">C</div><div class="tier-dropzone" data-tier="C"></div></div>
+      <div class="tier-row"><div class="tier-header t-D">D</div><div class="tier-dropzone" data-tier="D"></div></div>
+    </div>
+
+    <div class="pool-box">
+      <div class="pool-title">미분류 보관함</div>
+      <div class="tier-dropzone" data-tier="unranked" id="unranked"></div>
+    </div>
+  </div>
+
+  <script>
+    const INITIAL_MOVIES = [
+      { id: "m1", title: "기생충", tier: "unranked" },
+      { id: "m2", title: "명량", tier: "unranked" },
+      { id: "괴물", title: "괴물", tier: "unranked" },
+      { id: "올드보이", title: "올드보이", tier: "unranked" },
+      { id: "부산행", title: "부산행", tier: "unranked" },
+      { id: "신과함께", title: "신과함께", tier: "unranked" },
+      { id: "도둑들", title: "도둑들", tier: "unranked" },
+      { id: "7번방의 선물", title: "7번방의 선물", tier: "unranked" }
+    ];
+
+    let movies = [];
+
+    /* [버그 발생]: AI가 검색 필터링을 추가하면서 
+       초기화 시 localStorage를 불러오지 않고 항상 INITIAL_MOVIES로 리셋하도록 잘못 코딩하여
+       영화를 S칸으로 옮긴 후 새로고침(F5)을 하면 원래 기능이었던 자동 저장이 풀리고 미분류로 돌아가 버림! */
+    function init() {
+      movies = JSON.parse(JSON.stringify(INITIAL_MOVIES)); // 버그: localStorage.getItem 누락!
+      render();
+      bindEvents();
+    }
+
+    function render() {
+      document.querySelectorAll('.tier-dropzone').forEach(z => z.innerHTML = '');
+      movies.forEach(m => {
+        const card = document.createElement('div');
+        card.className = 'movie-card';
+        card.textContent = m.title;
+        card.draggable = true;
+        card.dataset.id = m.id;
+
+        card.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', m.id);
+        });
+
+        const target = document.querySelector(`.tier-dropzone[data-tier="${m.tier}"]`) || document.getElementById('unranked');
+        target.appendChild(card);
+      });
+      filterMovies();
+    }
+
+    function filterMovies() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      document.querySelectorAll('.movie-card').forEach(card => {
+        if (!q || card.textContent.toLowerCase().includes(q)) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    }
+
+    function bindEvents() {
+      document.querySelectorAll('.tier-dropzone').forEach(zone => {
+        zone.addEventListener('dragover', e => e.preventDefault());
+        zone.addEventListener('drop', e => {
+          e.preventDefault();
+          const id = e.dataTransfer.getData('text/plain');
+          const movie = movies.find(x => x.id === id);
+          if (movie) {
+            movie.tier = zone.dataset.tier;
+            render();
+          }
+        });
+      });
+    }
+
+    function resetToInitial() {
+      movies = JSON.parse(JSON.stringify(INITIAL_MOVIES));
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>
